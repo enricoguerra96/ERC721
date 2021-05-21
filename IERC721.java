@@ -10,7 +10,7 @@ public interface IERC721 extends IERC721View{
     @FromContract @Payable void approve(Contract approved, UnsignedBigInteger tokenId);
     void setApprovalForAll(Contract operator, boolean approved);
     @View Contract getApproved(UnsignedBigInteger tokenId);
-    @View boolean isApprovedForAll(UnsignedBigInteger owner, Contract operator);
+    @View boolean isApprovedForAll(Contract owner, Contract operator);
 
     class Transfer extends Event {
         public final Contract from, to;
