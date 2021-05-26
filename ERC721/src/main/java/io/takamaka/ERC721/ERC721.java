@@ -17,8 +17,6 @@ public class ERC721 extends Contract implements IERC721{
     private final StorageMap<BigInteger, Contract> idToApproval = new StorageTreeMap<>();
     private final StorageMap<Contract, BigInteger> ownerToNFTokenCount = new StorageTreeMap<>();
     private final StorageMap<Contract, StorageMap<Contract, Boolean>> ownerToOperators = new StorageTreeMap<>();
-
-    public final BigInteger ZERO = new BigInteger("0");
     private final String name;
     private final String symbol;
 
@@ -26,6 +24,9 @@ public class ERC721 extends Contract implements IERC721{
         this.name = name;
         this.symbol = symbol;
     }
+
+    public final BigInteger ZERO = new BigInteger("0");
+    public final BigInteger ONE = new BigInteger("1");
 
     @Override
     public @View BigInteger balanceOf(Contract owner) {
@@ -66,7 +67,8 @@ public class ERC721 extends Contract implements IERC721{
 
     @Override
     public @View boolean isApprovedForAll(Contract owner, Contract operator) {
-        return ownerToOperators.get(owner).get(operator);
+        return ownerToOperators.get(owner) != null
+                && ownerToOperators.get(owner).getOrDefault(operator, false);
     }
 
     @Override
@@ -80,14 +82,13 @@ public class ERC721 extends Contract implements IERC721{
     }
 
     @Override
-    public @FromContract @Payable
-    void TransferFrom(BigInteger tokenId, Contract from, Contract to) {
+    public @FromContract @Payable void TransferFrom(BigInteger tokenId, Contract from, Contract to) {
         transfer(from, to, tokenId);
     }
 
-    protected @FromContract  void _safeTransferFrom(Contract from, Contract to, BigInteger tokenId, byte data){
+    protected @FromContract void _safeTransferFrom(Contract from, Contract to, BigInteger tokenId, byte data){
         transfer(from, to, tokenId);
-        //TODO: ERC721 receiver
+        //TODO: ERC721Receiver if "to" is a smart  contract
     }
 
     protected @FromContract void transfer(Contract from, Contract to, BigInteger tokenId){
@@ -110,15 +111,17 @@ public class ERC721 extends Contract implements IERC721{
 
         BigInteger value = ownerToNFTokenCount.get(from);
         ownerToNFTokenCount.remove(from);
-        ownerToNFTokenCount.put(from, value.subtract(BigInteger.valueOf(1)));
+        ownerToNFTokenCount.put(from, value.subtract(ONE));
     }
 
     protected void addNFToken(Contract to, BigInteger tokenId) {
         idToOwner.put(tokenId, to);
 
         BigInteger value = ownerToNFTokenCount.get(to);
+        if(value == null)
+            value = ZERO;
         ownerToNFTokenCount.remove(to);
-        ownerToNFTokenCount.put(to, value.add(BigInteger.valueOf(1)));
+        ownerToNFTokenCount.put(to, value.add(ONE));
     }
 
     protected void clearApproval(BigInteger tokenId) {
@@ -129,14 +132,17 @@ public class ERC721 extends Contract implements IERC721{
     protected @FromContract void canTransfer(BigInteger tokenId) {
         Contract tokenOwner = ownerOf(tokenId);
         require(tokenOwner == caller() ||
-                        idToApproval.get(tokenId) == caller() ||
-                        ownerToOperators.get(tokenOwner).get(caller()),
+                        idToApproval.get(tokenId) != null && idToApproval.get(tokenId) == caller() ||
+                        (ownerToOperators.get(tokenOwner) != null &&
+                            ownerToOperators.get(tokenOwner).getOrDefault(caller(),false)),
                 "ERC721: Caller not owner or approved or operator");
     }
 
     protected @FromContract void canOperate(BigInteger tokenId) {
         Contract tokenOwner = ownerOf(tokenId);
-        require(tokenOwner == caller() || ownerToOperators.get(tokenOwner).get(caller()),
+        require(tokenOwner == caller() ||
+                        (ownerToOperators.get(tokenOwner) != null &&
+                                ownerToOperators.get(tokenOwner).getOrDefault(caller(),false)),
                 "ERC721: Not owner or operator");
     }
 
@@ -162,11 +168,7 @@ public class ERC721 extends Contract implements IERC721{
         event(new Transfer(tokenOwner, null, tokenId));
     }
 
-    public @View String getName(){
-        return this.name;
-    }
+    public @View String getName(){ return this.name; }
 
-    public @View String getSymbol(){
-        return this.symbol;
-    }
+    public @View String getSymbol(){ return this.symbol; }
 }
