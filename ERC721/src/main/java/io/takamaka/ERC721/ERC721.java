@@ -4,8 +4,7 @@ import io.takamaka.code.lang.Contract;
 import io.takamaka.code.lang.FromContract;
 import io.takamaka.code.lang.Payable;
 import io.takamaka.code.lang.View;
-import io.takamaka.code.util.StorageMap;
-import io.takamaka.code.util.StorageTreeMap;
+import io.takamaka.code.util.*;
 
 import java.math.BigInteger;
 
@@ -16,7 +15,7 @@ public class ERC721 extends Contract implements IERC721{
     private final StorageMap<BigInteger, Contract> idToOwner = new StorageTreeMap<>();
     private final StorageMap<BigInteger, Contract> idToApproval = new StorageTreeMap<>();
     private final StorageMap<Contract, BigInteger> ownerToNFTokenCount = new StorageTreeMap<>();
-    private final StorageMap<Contract, StorageMap<Contract, Boolean>> ownerToOperators = new StorageTreeMap<>();
+    private final StorageMap<Contract, StorageSet<Contract>> ownerToOperators = new StorageTreeMap<>();
     private final String name;
     private final String symbol;
 
@@ -56,19 +55,35 @@ public class ERC721 extends Contract implements IERC721{
 
     @Override
     public @FromContract void setApprovalForAll(Contract operator, boolean approved) {
-        StorageMap<Contract, Boolean> innerMap = ownerToOperators.get(caller());
-        if(innerMap == null) {
-            ownerToOperators.put(caller(), innerMap = new StorageTreeMap<>());
+        StorageSet<Contract> innerSet = ownerToOperators.get(caller());
+        if(approved) {
+            if (innerSet == null) {
+                ownerToOperators.put(caller(), innerSet = new StorageTreeSet<>());
+            }
+            innerSet.add(operator);
+            event(new ApprovalForAll(caller(), operator, true));
         }
-        innerMap.put(operator, approved);
-
-        event(new ApprovalForAll(caller(), operator, approved));
+        else{
+            if(innerSet != null){
+                for(Contract elem: innerSet){
+                    if(elem == operator){
+                        innerSet.remove(operator);
+                        event(new ApprovalForAll(caller(), operator, false));
+                    }
+                }
+            }
+        }
     }
 
     @Override
     public @View boolean isApprovedForAll(Contract owner, Contract operator) {
-        return ownerToOperators.get(owner) != null
-                && ownerToOperators.get(owner).getOrDefault(operator, false);
+        if(ownerToOperators.get(owner) == null)
+            return false;
+        for(Contract elem: ownerToOperators.get(owner)) {
+            if (elem != null && elem == operator)
+                return true;
+        }
+        return false;
     }
 
     @Override
@@ -131,19 +146,29 @@ public class ERC721 extends Contract implements IERC721{
 
     protected @FromContract void canTransfer(BigInteger tokenId) {
         Contract tokenOwner = ownerOf(tokenId);
-        require(tokenOwner == caller() ||
-                        idToApproval.get(tokenId) != null && idToApproval.get(tokenId) == caller() ||
-                        (ownerToOperators.get(tokenOwner) != null &&
-                            ownerToOperators.get(tokenOwner).getOrDefault(caller(),false)),
+        boolean isOperator = false;
+        for(Contract operator: ownerToOperators.get(tokenOwner))
+            if (operator != null && operator == caller()) {
+                isOperator = true;
+                break;
+            }
+
+        require((idToApproval.get(tokenId) != null && idToApproval.get(tokenId) == caller())
+                        || tokenOwner == caller() || isOperator,
                 "ERC721: Caller not owner or approved or operator");
     }
 
     protected @FromContract void canOperate(BigInteger tokenId) {
         Contract tokenOwner = ownerOf(tokenId);
-        require(tokenOwner == caller() ||
-                        (ownerToOperators.get(tokenOwner) != null &&
-                                ownerToOperators.get(tokenOwner).getOrDefault(caller(),false)),
-                "ERC721: Not owner or operator");
+        boolean isOperator = false;
+        for(Contract operator: ownerToOperators.get(tokenOwner))
+            if (operator != null && operator == caller()) {
+                isOperator = true;
+                break;
+            }
+
+        require(tokenOwner == caller() || isOperator,
+                "ERC721: Caller not owner or operator");
     }
 
     @Override
