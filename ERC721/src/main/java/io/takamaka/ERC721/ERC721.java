@@ -147,11 +147,14 @@ public class ERC721 extends Contract implements IERC721{
     protected @FromContract void canTransfer(BigInteger tokenId) {
         Contract tokenOwner = ownerOf(tokenId);
         boolean isOperator = false;
-        for(Contract operator: ownerToOperators.get(tokenOwner))
-            if (operator != null && operator == caller()) {
-                isOperator = true;
-                break;
-            }
+        StorageSet <Contract> ops = ownerToOperators.get(tokenOwner);
+        if(ops != null) {
+            for (Contract operator : ops)
+                if (operator != null && operator == caller()) {
+                    isOperator = true;
+                    break;
+                }
+        }
 
         require((idToApproval.get(tokenId) != null && idToApproval.get(tokenId) == caller())
                         || tokenOwner == caller() || isOperator,
