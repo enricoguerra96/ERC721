@@ -2,7 +2,6 @@ package io.takamaka.ERC721;
 
 import io.takamaka.code.lang.Contract;
 import io.takamaka.code.lang.FromContract;
-import io.takamaka.code.lang.Payable;
 import io.takamaka.code.lang.View;
 import io.takamaka.code.util.*;
 
