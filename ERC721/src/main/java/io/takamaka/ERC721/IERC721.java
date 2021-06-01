@@ -5,10 +5,10 @@ import io.takamaka.code.lang.*;
 import java.math.BigInteger;
 
 public interface IERC721 extends IERC721View{
-    @FromContract @Payable void safeTransferFrom(BigInteger tokenId, Contract from, Contract to, byte data);
-    @FromContract @Payable void safeTransferFrom(BigInteger tokenId, Contract from, Contract to);
-    @FromContract @Payable void TransferFrom(BigInteger tokenId, Contract from, Contract to);
-    @FromContract @Payable void approve(BigInteger tokenId, Contract approved);
+    @FromContract void safeTransferFrom(BigInteger tokenId, Contract from, Contract to, byte data);
+    @FromContract void safeTransferFrom(BigInteger tokenId, Contract from, Contract to);
+    @FromContract void TransferFrom(BigInteger tokenId, Contract from, Contract to);
+    @FromContract void approve(BigInteger tokenId, Contract approved);
     @FromContract void setApprovalForAll(Contract operator, boolean approved);
     @View Contract getApproved(BigInteger tokenId);
     @View boolean isApprovedForAll(Contract owner, Contract operator);

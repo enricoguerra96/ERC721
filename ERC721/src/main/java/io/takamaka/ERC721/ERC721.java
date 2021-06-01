@@ -36,7 +36,7 @@ public class ERC721 extends Contract implements IERC721{
     public @View Contract ownerOf(BigInteger tokenId){ return idToOwner.get(tokenId); }
 
     @Override
-    public @FromContract @Payable void approve(BigInteger tokenId, Contract approved) {
+    public @FromContract void approve(BigInteger tokenId, Contract approved) {
         Contract tokenOwner = ownerOf(tokenId);
         require(tokenOwner != approved, "ERC721: Approved is owner");
         require(tokenOwner != null, "ERC721: Not valid NFT");
@@ -87,17 +87,17 @@ public class ERC721 extends Contract implements IERC721{
     }
 
     @Override
-    public @FromContract @Payable void safeTransferFrom(BigInteger tokenId, Contract from, Contract to) {
+    public @FromContract void safeTransferFrom(BigInteger tokenId, Contract from, Contract to) {
         _safeTransferFrom(from, to, tokenId, (byte) 0);
     }
 
     @Override
-    public @FromContract @Payable void safeTransferFrom(BigInteger tokenId, Contract from, Contract to, byte data) {
+    public @FromContract void safeTransferFrom(BigInteger tokenId, Contract from, Contract to, byte data) {
         _safeTransferFrom(from, to, tokenId, data);
     }
 
     @Override
-    public @FromContract @Payable void TransferFrom(BigInteger tokenId, Contract from, Contract to) {
+    public @FromContract void TransferFrom(BigInteger tokenId, Contract from, Contract to) {
         transfer(from, to, tokenId);
     }
 
