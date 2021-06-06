@@ -64,11 +64,9 @@ public class ERC721 extends Contract implements IERC721{
         }
         else{
             if(innerSet != null){
-                for(Contract elem: innerSet){
-                    if(elem == operator){
+                if(innerSet.contains(operator)){
                         innerSet.remove(operator);
                         event(new ApprovalForAll(caller(), operator, false));
-                    }
                 }
             }
         }
